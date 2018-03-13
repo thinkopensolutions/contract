@@ -19,6 +19,9 @@ class AccountAnalyticAccount(models.Model):
                 'account.analytic.contract',
                 ]
 
+    analytic_account_type = fields.Selection([('a', u'Analytic Account'),
+                                      ('c', u'Contract')], default='a',
+                                     string=u'Account Type')
     contract_template_id = fields.Many2one(
         string='Contract Template',
         comodel_name='account.analytic.contract',
@@ -64,9 +67,9 @@ class AccountAnalyticAccount(models.Model):
                 self.recurring_invoice_line_ids = lines
 
             elif not any((
-                field.compute, field.related, field.automatic,
-                field.readonly, field.company_dependent,
-                field.name in self.NO_SYNC,
+                    field.compute, field.related, field.automatic,
+                    field.readonly, field.company_dependent,
+                    field.name in self.NO_SYNC,
             )):
                 self[field_name] = self.contract_template_id[field_name]
 
@@ -164,19 +167,19 @@ class AccountAnalyticAccount(models.Model):
                 _("Please define a sale journal for the company '%s'.") %
                 (self.company_id.name or '',))
         currency = (
-            self.pricelist_id.currency_id or
-            self.partner_id.property_product_pricelist.currency_id or
-            self.company_id.currency_id
+                self.pricelist_id.currency_id or
+                self.partner_id.property_product_pricelist.currency_id or
+                self.company_id.currency_id
         )
         invoice = self.env['account.invoice'].new({
-            'reference': self.code,
+            # 'reference': self.code,
             'type': 'out_invoice',
             'partner_id': self.partner_id.address_get(
                 ['invoice'])['invoice'],
             'currency_id': currency.id,
             'journal_id': journal.id,
             'date_invoice': self.recurring_next_date,
-            'origin': self.name,
+            'origin': '[' + self.code +'] ' + self.name if self.code else self.name,
             'company_id': self.company_id.id,
             'contract_id': self.id,
             'user_id': self.partner_id.user_id.id,
